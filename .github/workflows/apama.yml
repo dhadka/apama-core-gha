@@ -54,10 +54,10 @@ jobs:
           APAMA_INSTALLER_PATH=$GITHUB_WORKSPACE/apama-installer
 
           # Must use forward slashes in these paths or bash will get confused
-          if [[ ${{runner.os}}=windows ]]; then
+          if [[ ${{runner.os}} = windows ]]; then
             echo This is windows!
             APAMA_INSTALL_DIR=c:/SoftwareAG
-          elif
+          else
             echo This is not Windows !
             APAMA_INSTALL_DIR=/opt/SoftwareAG
           fi
@@ -67,19 +67,21 @@ jobs:
           unzip -q $APAMA_INSTALLER_PATH/apama.zip
 
           # Must use forward slashes in these paths or bash will get confused
-          if [[ ${{runner.os}}=windows ]]; then
+          if [[ ${{runner.os}} = Windows ]]; then
             echo This is windows!
-          elif
+            cmd /c set
+          else
             echo This is not Windows !
+            . $APAMA_INSTALL_DIR/Apama/bin/apama_env
+            echo "APAMA_HOME=$APAMA_HOME" >> $GITHUB_ENV
+            echo "$PATH" >> $GITHUB_PATH
+            #echo "$LD_LIBRARY_PATH" >> $GITHUB_PATH
+
           fi
 
           
           # Once installed, copy the most important env vars into the workflow's env for later steps
           # This allows running processes such as Python and pip directly
-          . $APAMA_INSTALL_DIR/Apama/bin/apama_env
-          echo "APAMA_HOME=$APAMA_HOME" >> $GITHUB_ENV
-          echo "$PATH" >> $GITHUB_PATH
-          #echo "$LD_LIBRARY_PATH" >> $GITHUB_PATH
 
           popd
 
