@@ -24,9 +24,11 @@ jobs:
         include:
           - run-id: amd64_linux
             os: ubuntu-latest
+            apama-archive-ext: tar.gz
             release-docs: true
             
           - run-id: amd64_win
+            apama-archive-ext: zip
             os: windows-latest
             
     runs-on: ${{matrix.os}}
@@ -44,8 +46,8 @@ jobs:
         uses: carlosperate/download-file-action@v1.0.3
         if: steps.cache-apama-installer.outputs.cache-hit != 'true'
         with:
-           file-url: 'https://downloads.apamacommunity.com/apama-core/${{ env.WORKFLOW_APAMA_VERSION }}/apama_core_${{ env.WORKFLOW_APAMA_VERSION }}_${{ matrix.run-id }}.zip'
-           file-name: apama.zip
+           file-url: 'https://downloads.apamacommunity.com/apama-core/${{ env.WORKFLOW_APAMA_VERSION }}/apama_core_${{ env.WORKFLOW_APAMA_VERSION }}_${{ matrix.run-id }}..${{ matrix.apama-archive-ext }}'
+           file-name: apama-archive
            location: ${{ github.workspace }}/apama-installer
 
       - name: Install Apama
@@ -55,16 +57,20 @@ jobs:
 
           # Must use forward slashes in these paths or bash will get confused
           if [[ ${{runner.os}} = windows ]]; then
-            echo This is windows!
+            echo IS windows: ${{runner.os}}
             APAMA_INSTALL_DIR=c:/SoftwareAG
+            mkdir $APAMA_INSTALL_DIR
+            pushd ${APAMA_INSTALL_DIR}
+            unzip -q $APAMA_INSTALLER_PATH/apama.zip
           else
-            echo This is not Windows !
+            echo NOT windows: ${{runner.os}}
             APAMA_INSTALL_DIR=/opt/SoftwareAG
+            mkdir $APAMA_INSTALL_DIR
+            pushd ${APAMA_INSTALL_DIR}
+            tar -qxzf $APAMA_INSTALLER_PATH/apama.tar.gz
           fi
-          mkdir $APAMA_INSTALL_DIR
           
-          pushd ${APAMA_INSTALL_DIR}
-          unzip -q $APAMA_INSTALLER_PATH/apama.zip
+          ls
 
           # Must use forward slashes in these paths or bash will get confused
           if [[ ${{runner.os}} = Windows ]]; then
