@@ -56,8 +56,8 @@ jobs:
           APAMA_INSTALLER_PATH=$GITHUB_WORKSPACE/apama-installer
 
           # Must use forward slashes in these paths or bash will get confused
-          if [[ ${{runner.os}} = windows ]]; then
-            echo IS windows: ${{runner.os}}
+          if [[ ${{runner.os}} = Windows ]]; then
+            echo IS windows: "${{runner.os}}"
             APAMA_INSTALL_DIR=c:/SoftwareAG
             mkdir $APAMA_INSTALL_DIR
             pushd ${APAMA_INSTALL_DIR}
@@ -67,7 +67,7 @@ jobs:
             APAMA_INSTALL_DIR=/opt/SoftwareAG
             mkdir $APAMA_INSTALL_DIR
             pushd ${APAMA_INSTALL_DIR}
-            tar -qxzf $APAMA_INSTALLER_PATH/apama.tar.gz
+            tar -xzf $APAMA_INSTALLER_PATH/apama.tar.gz
           fi
           
           ls
