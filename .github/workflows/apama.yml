@@ -1,6 +1,10 @@
-# This workflow installs Apama Community Core Edition and uses it to run PySys tests for your application
+# This workflow installs Apama Community Edition and uses it to run PySys tests for your application
+
+# Python 3 and Java JDK 8 are shipped with Apama (and added to PATH by this workflow) so there is no need to install them separately. 
 
 # Using this workflow implies that you have agreed to the terms of the Software AG license agreement - see http://www.apamacommunity.com/terms-conditions/
+# This workflow can be used without a commercial license of Apama. If you do have a commercial Apama license you hereby 
+# agree not to commit the license file to any repository or location that can be accessed outside your organization. 
 
 name: PySys
 
@@ -22,126 +26,73 @@ jobs:
       
       matrix:
         include:
-          - run-id: amd64_linux
-            os: ubuntu-latest
-            apama-archive-ext: tar.gz
-            release-docs: true
+          #- run-id: amd64_linux
+          #  os: ubuntu-latest
+          #  upload-docs: true
             
           - run-id: amd64_win
-            apama-archive-ext: zip
             os: windows-latest
             
     runs-on: ${{matrix.os}}
     
     steps:
-      # Install the Apama Community Core Edition. This excludes tools such as apamadoc/apama_project.
-      - name: Get Apama installer from cache
-        uses: actions/cache@v2
+      # Install the full Apama Community Edition. This contains useful tools such as apamadoc/apama_project 
+      # which are not in the smaller "core" package
+
+      - uses: actions/checkout@v2
+
+      - name: Apama installation cache
+        # This fork of actions/cache allows cache to be saved even if some later steps (e.g. testing) fail
+        uses: pat-s/always-upload-cache@v2.1.0
         id: cache-apama-installer
         with:
-            path: ${{ github.workspace }}/apama-installer/apama.zip
-            key: apamainstaller-${{ matrix.run-id }}-${{ env.WORKFLOW_APAMA_VERSION }}-core-zip-xxx
-
-      - name: Download Apama
-        uses: carlosperate/download-file-action@v1.0.3
-        if: steps.cache-apama-installer.outputs.cache-hit != 'true'
-        with:
-           file-url: 'https://downloads.apamacommunity.com/apama-core/${{ env.WORKFLOW_APAMA_VERSION }}/apama_core_${{ env.WORKFLOW_APAMA_VERSION }}_${{ matrix.run-id }}.${{ matrix.apama-archive-ext }}'
-           file-name: apama-archive
-           location: ${{ github.workspace }}/apama-installer
+            # Would prefer to put this in ~/ but doesn't work on Windows currently due to https://github.com/actions/cache/issues/456
+            path: ${{ github.workspace }}/cached-apama-installation.tar
+            # To use a clean cache, add extra chars to this key
+            key: apama-${{ matrix.run-id }}-${{ env.WORKFLOW_APAMA_VERSION }}-TODOx1
 
       - name: Install Apama
         shell: bash
         run: |
-          APAMA_INSTALLER_PATH=$GITHUB_WORKSPACE/apama-installer
+          APAMA_CACHE_TAR=`pwd`/cached-apama-installation.tar
+          echo Cache location: $APAMA_CACHE_TAR
 
-          # Must use forward slashes in these paths or bash will get confused
           if [[ ${{runner.os}} = Windows ]]; then
-            echo IS windows: "${{runner.os}}"
-            APAMA_INSTALL_DIR=c:/SoftwareAG
-            mkdir $APAMA_INSTALL_DIR
-            pushd ${APAMA_INSTALL_DIR}
-            unzip -q $APAMA_INSTALLER_PATH/apama.zip
+            _SAG_INSTALL_PATH=c:\\SoftwareAG
           else
-            echo NOT windows: ${{runner.os}}
-            APAMA_INSTALL_DIR=/opt/SoftwareAG
-            mkdir $APAMA_INSTALL_DIR
-            pushd ${APAMA_INSTALL_DIR}
-            tar -xzf $APAMA_INSTALLER_PATH/apama.tar.gz
+            _SAG_INSTALL_PATH=/opt/softwareag
           fi
           
-          ls
+          if [[ "${{ steps.cache-apama-installer.outputs.cache-hit }}" = "true" ]]; then
+            echo Unpacking Apama installation from cache
+            
+            mkdir $_SAG_INSTALL_PATH
+            cd $_SAG_INSTALL_PATH
+            tar -xf $APAMA_CACHE_TAR
 
-          # Must use forward slashes in these paths or bash will get confused
-          if [[ ${{runner.os}} = Windows ]]; then
-            echo This is windows!
-            cmd /c set
+            # Check it unpacked correctly
+            ls $_SAG_INSTALL_PATH/Apama > /dev/null
           else
-            echo This is not Windows !
-            . $APAMA_INSTALL_DIR/Apama/bin/apama_env
-            echo "APAMA_HOME=$APAMA_HOME" >> $GITHUB_ENV
-            echo "$PATH" >> $GITHUB_PATH
-            #echo "$LD_LIBRARY_PATH" >> $GITHUB_PATH
-
+            # Cache miss - need to install it
+            cd ../apama-installer
+            unzip -q apama-installer.zip
+            mv apama_*/* ./
+            
+            mkdir --parents $_SAG_INSTALL_PATH/Apama/bin
+            echo Hello > $_SAG_INSTALL_PATH/Apama/bin/myprogram.txt
+            
+            # Double-check that it was installed
+            ls $_SAG_INSTALL_PATH/Apama/bin > /dev/null
+            
+            # Archive a pristine copy of the installation for the cache (before running any tests); 
+            # no need to compress as the cache already does that
+            cd $_SAG_INSTALL_PATH
+            tar -cf $APAMA_CACHE_TAR *
+            
+            echo TODO - contents of ~ are:
+            ls ~
+            echo ---
           fi
 
-          
-          # Once installed, copy the most important env vars into the workflow's env for later steps
-          # This allows running processes such as Python and pip directly
+          cd ~
 
-          popd
-
-      - uses: actions/checkout@v2
-
-      - name: LOGIT
-        shell: bash
-        run: |
-          echo GH path:
-          cat $GITHUB_ENV
-          echo GH env:
-          cat $GITHUB_PATH
-
-      - name: Build project
-        shell: bash
-        run: |
-          echo TODO
-          # . $APAMA_HOME/bin/apama_env
-          #ant
-
-      - name: PySys tests
-        working-directory: test
-        shell: bash
-        id: pysys
-        run: |
-          #. $APAMA_HOME/bin/apama_env
-          # TODO: add ci option, remove absolute path and modernize code coverage approach once we're on 10.7
-          #pysys.py run --outdir=`pwd`/${{matrix.run-id}} -Xeplcoverage --threads=auto
-
-      #- name: Upload code coverage
-      #  uses: codecov/codecov-action@v1
-      #  if: steps.pysys.outputs.artifact_EPLCoverageDir
-      #  with:
-      #    file: ${{ steps.pysys.outputs.artifact_EPLCoverageDir }}/epl_coverage.xml
-        
-      # If any tests fail, PySys will return an error code, so we need "if: always()" so the following steps will run
-      # Since we expect failures only from the cookbook sample, that's the one we upload artifacts for (using id=pysys)
-      # The follow lines are a copy from the sample pysys workflow
-
-      #- name: Upload performance CSV artifacts
-      #  uses: actions/upload-artifact@v2
-      #  # Only do this if some performance results were generated
-      #  if: always() && steps.pysys.outputs.artifact_CSVPerformanceReport
-
-      #  with:
-      #    name: pysys_performance_${{matrix.test-run-id}}
-      #    path: ${{ steps.pysys.outputs.artifact_CSVPerformanceReport }}
-
-      # TODO: could also upload epl code coverage (in 10.7.1 this will be easier due to epl_coverage.xml) 
-      
-      - name: Upload archive artifacts for any test failures
-        uses: actions/upload-artifact@v2
-        if: failure()
-
-        with:
-          name: pysys_output_${{matrix.run-id}}
-          path: test/__pysys_output/${{matrix.run-id}}
