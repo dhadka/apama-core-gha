@@ -49,13 +49,14 @@ jobs:
             # Would prefer to put this in ~/ but doesn't work on Windows currently due to https://github.com/actions/cache/issues/456
             path: ${{ github.workspace }}/cached-apama-installation.tar
             # To use a clean cache, add extra chars to this key
-            key: apama-${{ matrix.run-id }}-${{ env.WORKFLOW_APAMA_VERSION }}-TODOx1
+            key: apama-${{ matrix.run-id }}-${{ env.WORKFLOW_APAMA_VERSION }}-TODOxx1
 
       - name: Install Apama
         shell: bash
         run: |
           APAMA_CACHE_TAR=`pwd`/cached-apama-installation.tar
           echo Cache location: $APAMA_CACHE_TAR
+          ls
 
           if [[ ${{runner.os}} = Windows ]]; then
             _SAG_INSTALL_PATH=c:\\SoftwareAG
