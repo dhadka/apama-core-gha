@@ -74,9 +74,6 @@ jobs:
             ls $_SAG_INSTALL_PATH/Apama > /dev/null
           else
             # Cache miss - need to install it
-            cd ../apama-installer
-            unzip -q apama-installer.zip
-            mv apama_*/* ./
             
             mkdir --parents $_SAG_INSTALL_PATH/Apama/bin
             echo Hello > $_SAG_INSTALL_PATH/Apama/bin/myprogram.txt
