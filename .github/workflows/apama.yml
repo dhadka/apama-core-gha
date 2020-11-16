@@ -1,10 +1,4 @@
-# This workflow installs Apama Community Edition and uses it to run PySys tests for your application
-
-# Python 3 and Java JDK 8 are shipped with Apama (and added to PATH by this workflow) so there is no need to install them separately. 
-
-# Using this workflow implies that you have agreed to the terms of the Software AG license agreement - see http://www.apamacommunity.com/terms-conditions/
-# This workflow can be used without a commercial license of Apama. If you do have a commercial Apama license you hereby 
-# agree not to commit the license file to any repository or location that can be accessed outside your organization. 
+# Demonstrate cache doesn't work well on Windows
 
 name: PySys
 
