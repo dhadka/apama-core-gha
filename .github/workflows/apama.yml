@@ -20,9 +20,9 @@ jobs:
       
       matrix:
         include:
-          #- run-id: amd64_linux
-          #  os: ubuntu-latest
-          #  upload-docs: true
+          - run-id: amd64_linux
+            os: ubuntu-latest
+            upload-docs: true
             
           - run-id: amd64_win
             os: windows-latest
