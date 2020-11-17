@@ -31,6 +31,10 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
+    
+      - name: Use GNU tar
+        run: |
+          echo "C:\Program Files\Git\usr\bin\" >> $GITHUB_PATH
       
       - run: |
           echo ${{ github.workspace }}
