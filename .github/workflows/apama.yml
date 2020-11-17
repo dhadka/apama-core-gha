@@ -38,7 +38,7 @@ jobs:
             # Would prefer to put this in ~/ but doesn't work on Windows currently due to https://github.com/actions/cache/issues/456
             path: ${{ github.workspace }}/cached-apama-installation.tar
             # To use a clean cache, add extra chars to this key
-            key: mykey-${{ matrix.run-id }}-TODO.01
+            key: mykey-${{ matrix.run-id }}-TODO.02
 
       #- name: OTHER cache
       #  # This fork of actions/cache allows cache to be saved even if some later steps (e.g. testing) fail
@@ -90,6 +90,7 @@ jobs:
             
             cd ../apama-installer
             unzip -q apama-installer.zip
+            cp apama-installer.zip $APAMA_CACHE_TAR
             mv apama_*/* ./
             
             cat > apama-installer-script.txt << EOF
@@ -115,11 +116,12 @@ jobs:
             # no need to compress as the cache already does that
             cd $_SAG_INSTALL_PATH
             #tar -cf $APAMA_CACHE_TAR *
-            touch `pwd`/cached-apama-installation.tar
+            #touch `pwd`/cached-apama-installation.tar
 
             
             echo TODO - contents of ~ are:
             ls ~
             echo ---
+            ls -l $APAMA_CACHE_TAR
           fi
 
