@@ -38,7 +38,7 @@ jobs:
             # Would prefer to put this in ~/ but doesn't work on Windows currently due to https://github.com/actions/cache/issues/456
             path: ${{ github.workspace }}/cached-apama-installation.tar
             # To use a clean cache, add extra chars to this key
-            key: mykey-${{ matrix.run-id }}-TODO.06
+            key: mykey-${{ matrix.run-id }}-TODO.07
 
       #- name: OTHER cache
       #  # This fork of actions/cache allows cache to be saved even if some later steps (e.g. testing) fail
@@ -125,3 +125,48 @@ jobs:
             ls -l $APAMA_CACHE_TAR
           fi
 
+          cd ~
+          # Once installed, copy the entire apama environment into the GH Actions env so it can be used in any type of 
+          # shell (bash/cmd/PS etc). We also set an extra env var APAMA_PYSYS so user can run pysys from any shell. 
+          if [[ ${{runner.os}} = Windows ]]; then
+            cmd.exe /c "$_SAG_INSTALL_PATH/Apama/bin/apama_env.bat && set > apama.env"
+            echo "APAMA_PYSYS=pysys.cmd" >> $GITHUB_ENV
+          else
+            . $_SAG_INSTALL_PATH/Apama/bin/apama_env
+            env | sort >> apama.env
+            echo "APAMA_PYSYS=pysys" >> $GITHUB_ENV
+          fi
+          
+          # Until Apama 10.7 we need to explicitly enable it (and disable colorama on windows which would replace the escape codes)
+          echo PYSYS_COLOR=true >> $GITHUB_ENV
+          echo PYSYS_DISABLE_COLORAMA=true >> $GITHUB_ENV
+          
+          cat apama.env >> $GITHUB_ENV
+
+      - name: PySys tests
+        working-directory: test
+        shell: bash
+        id: pysys
+        run: |
+          ls ..
+          $APAMA_PYSYS run --threads=auto --record --purge --printLogs=ALL -Xeplcoverage -XcodeCoverage --mode=ALL --outdir=`pwd`/__pysys_output/${{matrix.run-id}} || echo failed
+
+      # If any tests fail, PySys will return an error code, so we need "if: always()" so the following steps will run
+      # Since we expect failures only from the cookbook sample, that's the one we upload artifacts for (using id=pysys)
+      # The follow lines are a copy from the sample pysys workflow
+
+      - name: Upload archive artifacts for any test failures
+        uses: actions/upload-artifact@v2
+        if: failure()
+
+        with:
+          name: pysys_output_${{matrix.run-id}}
+          path: test/__pysys_output/${{matrix.run-id}}
+
+      - name: Upload EPL code coverage report
+        uses: actions/upload-artifact@v2
+        if: success()
+
+        with:
+          name: pysys_epl_coverage_${{matrix.run-id}}
+          path: test/__pysys_output/${{matrix.run-id}}/eplcoverage
